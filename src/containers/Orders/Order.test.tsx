@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach, Mock } from "vitest";
+import { describe, it, expect, vi, Mock } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { SessionProvider, useSession } from "../../context/AuthContext";
 import { Orders } from "./Orders";
 import { getOrders } from "../../services/getOrders";
+import { getSummaryOrders } from '../../utils/sumamry';
 
 vi.mock("../../services/getOrders", () => ({
     getOrders: vi.fn(),
@@ -62,11 +63,7 @@ const mockOrders = [
 ];
 
 describe("<Orders />", () => {
-    beforeEach(() => {
-        const mockUser = "visualizer";
-        (useSession as Mock).mockReturnValue({ user: mockUser });
-        mockGetOrders.mockResolvedValue(mockOrders);
-
+    const renderOrders = () => {
         render(
             <SessionProvider>
                 <MemoryRouter>
@@ -74,13 +71,35 @@ describe("<Orders />", () => {
                 </MemoryRouter>
             </SessionProvider>
         );
-    });
+    }
 
-    it("debería mostrar las órdenes", async () => {
+    it("Debería mostrar las órdenes", async () => {
+        (useSession as Mock).mockReturnValue({ user: { role: 'visualizer'} });
+        mockGetOrders.mockResolvedValue(mockOrders);
+        renderOrders();
+
         await waitFor(() => {
             const orders = screen.getAllByRole("heading", { level: 3 });
 
             expect(orders).toHaveLength(mockOrders.length);
         });
     });
+
+    it('Debería mostrar sección para superadmins', async () => {
+        (useSession as Mock).mockReturnValue({ user: { role: 'superadmin' } });
+        mockGetOrders.mockResolvedValue(mockOrders);
+        renderOrders();
+
+        await waitFor(() => {
+            const { totalOrders, totalValue, averageOrderValue } = getSummaryOrders(mockOrders);
+
+            const totalOrdersEl = screen.getByTestId("totalOrders").textContent;
+            const totalValuesEl = screen.getByTestId("totalValue").textContent;
+            const averageOrderValueEl = screen.getByTestId("averageOrderValue").textContent;
+
+            expect(totalOrdersEl).toBe(totalOrders.toString());
+            expect(totalValuesEl).toBe(`$${totalValue}`);
+            expect(averageOrderValueEl).toBe(`$${averageOrderValue}`);
+        })
+    })
 });
