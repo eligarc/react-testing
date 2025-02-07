@@ -4,9 +4,9 @@ import { renderHook, waitFor } from "@testing-library/react";
 
 import { useSession } from '../context/AuthContext';
 import { getOrders } from '../services/getOrders';
+import { useOrders } from './useOrders';
 
 import { useNavigate } from 'react-router-dom';
-import { useOrders } from './useOrders';
 
 vi.mock("../services/getOrders", () => ({
     getOrders: vi.fn(),
